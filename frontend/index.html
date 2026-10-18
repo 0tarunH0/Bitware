@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bitware Triage System</title>
+<style>
+:root{--bg1:#E6F3FB;--bg2:#A9D3F5;--card:#fff;--side:#F7FBFE;--ink:#0B1F44;--muted:#52627F;--line:#D3E0EE;--blue:#2F7BE0;--sel:#CFE4F8;--r:#E5322D;--y:#F5C518;--g:#25A74A;color-scheme:light;box-sizing:border-box;}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font:400 15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:linear-gradient(135deg,var(--bg1),var(--bg2)) fixed}
+h1,h2,h3{margin:0;font-weight:800;letter-spacing:-.01em}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+#login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.lc{width:100%;max-width:420px;background:var(--card);border-radius:28px;padding:34px 30px;box-shadow:0 20px 50px rgba(30,80,140,.18);text-align:center}
+.logo{width:68px;height:68px;border-radius:50%;background:var(--blue);display:grid;place-items:center;margin:0 auto 14px}
+.lc h1{font-size:28px}.lc p{margin:4px 0 22px;color:var(--muted)}
+.pill{display:block;width:100%;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:13px 20px;margin-bottom:12px}
+.btn{border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:600;padding:11px 14px;cursor:pointer}
+.btn.soft{background:var(--sel);color:var(--ink)}
+.btn.wide{width:100%;border-radius:999px;padding:14px;margin-top:4px}
+.err{color:var(--r);font-size:13px;min-height:18px;margin:2px 0 6px}
+.foot{margin-top:18px;font-size:12px;color:var(--muted)}
+#app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:var(--side);padding:22px 12px;border-right:1px solid var(--line)}
+.me{text-align:center;margin-bottom:16px}
+.av{width:72px;height:72px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font:800 28px system-ui,sans-serif;margin:0 auto 6px}
+.me small{color:var(--muted); font-weight:700;}
+nav{display:grid;gap:4px}
+nav button{display:flex;gap:12px;align-items:center;border:0;background:none;padding:11px 14px;border-radius:8px;cursor:pointer;font-weight:500;text-align:left}
+nav button.on{background:var(--sel);font-weight:700}
+nav svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.out{margin-top:16px;width:100%}
+main{padding:30px 32px 48px;min-width:0}
+main>h1{font-size:34px}main>.hi{margin:2px 0 22px;font-size:18px; color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;align-items:start}
+.card{background:var(--card);border-radius:18px;padding:18px 20px;box-shadow:0 6px 18px rgba(30,80,140,.12); margin-bottom: 18px;}
+.card h2{font-size:21px;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 0; border-bottom: 1px solid var(--line);}
+.row:last-child{border-bottom:none;}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+.t1{background:var(--r)}.t2{background:var(--y)}.t3{background:var(--g)}
+.chip{font-size:12.5px;font-weight:700;padding:3px 12px;border-radius:999px;color:#fff;white-space:nowrap}
+.chip.r{background:var(--r)}.chip.y{background:var(--y);color:#2b2100}.chip.g{background:var(--g)}.chip.st{background:var(--sel);color:var(--ink)}
+label{display:block;font-weight:600;margin:12px 0 6px}
+.f{width:100%;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:11px 14px}
+textarea.f{resize:vertical;min-height:110px}
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,120px);background:var(--ink);color:var(--card);padding:11px 20px;border-radius:12px;font-weight:600;transition:transform .3s;z-index:9}
+.toast.show{transform:translate(-50%,0)}
+.act-btns {display: flex; gap: 8px;}
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<section id="login">
+ <div class="lc">
+  <div class="logo"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg></div>
+  <h1>Bitware Triage</h1><p>Clinical Routing & Assessment</p>
+  <input class="pill" id="u" placeholder="Username" autocomplete="username">
+  <input class="pill" id="p" type="password" placeholder="Password" autocomplete="current-password">
+  <div class="err" id="err" role="alert"></div>
+  <button class="btn wide" id="go">Secure Sign In</button>
+ </div>
+</section>
+
+<!-- Main App Shell -->
+<div id="app" hidden>
+ <aside>
+    <div class="me"><div class="av" id="av"></div><b id="nm"></b><br><small id="rl"></small></div>
+    <nav id="nav"></nav>
+    <button class="btn soft out" id="out">Sign out</button>
+ </aside>
+ <main id="main"></main>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const API_URL = "http://148.100.109.220:8000/api/v1";
+const $ = id => document.getElementById(id);
+let token = null;
+let user = { username: "", role: "" };
+let currentPage = "Queue";
+let currentTriageMode = 'new';
+
+// Icons for navigation
+const ICONS = {
+    'Queue': '<path d="M4 6h16M4 12h16M4 18h10"/>',
+    'Triage': '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+    'Lookup': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    'Admin': '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'
+};
+
+// Role-based view access mapping
+const NAV_ACCESS = {
+    'ADMIN': ['Queue', 'Triage', 'Lookup', 'Admin'],
+    'DOCTOR': ['Queue', 'Lookup'],
+    'NURSE': ['Queue', 'Triage', 'Lookup']
+};
+
+function toast(m, err=false) {
+    const t = $('toast');
+    t.textContent = m;
+    t.style.background = err ? 'var(--r)' : 'var(--ink)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Global API Fetch wrapper
+async function apiCall(endpoint, method="GET", body=null) {
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
+
+    const res = await fetch(API_URL + endpoint, options);
+    const data = await res.json();
+    
+    if (!res.ok) {
+        if (res.status === 401 || res.status === 403) logout();
+        throw new Error(data.detail || "API Error");
+    }
+    return data;
+}
+
+// Authentication
+$('go').onclick = async () => {
+    const u = $('u').value.trim();
+    const p = $('p').value;
+    if (!u || !p) return $('err').textContent = "Enter credentials";
+    
+    try {
+        const res = await apiCall("/auth/login", "POST", { username: u, password: p });
+        token = res.access_token;
+        user.username = u;
+        user.role = res.role;
+        $('err').textContent = "";
+        initApp();
+    } catch (e) {
+        $('err').textContent = e.message;
+    }
+};
+
+$('out').onclick = logout;
+function logout() {
+    token = null;
+    user = { username: "", role: "" };
+    $('app').hidden = true;
+    $('login').hidden = false;
+    $('p').value = '';
+}
+
+// Initialize Application Shell
+function initApp() {
+    $('login').hidden = true;
+    $('app').hidden = false;
+    $('av').textContent = user.username[0].toUpperCase();$('nm').textContent = user.username;
+    $('rl').textContent = user.role;
+    
+    const views = NAV_ACCESS[user.role];
+    currentPage = views[0];
+    
+    $('nav').innerHTML = views.map(v => 
+        `<button class="${v === currentPage ? 'on' : ''}" onclick="navTo('${v}')">
+         <svg viewBox="0 0 24 24">${ICONS[v]}</svg>${v}</button>`
+    ).join('');
+    
+    renderView();
+}
+
+function navTo(view) {
+    currentPage = view;
+    Array.from($('nav').children).forEach(btn => {
+        btn.classList.toggle('on', btn.textContent.trim() === view);
+    });
+    renderView();
+}
+
+// Routing views to rendering functions
+function renderView() {
+    const main = $('main');
+    main.innerHTML = `<h1>${currentPage}</h1><div class="hi">Welcome, ${user.username}</div>`;
+    
+    if (currentPage === 'Queue') renderQueue();
+    if (currentPage === 'Triage') renderTriage();
+    if (currentPage === 'Lookup') renderLookup();
+    if (currentPage === 'Admin') renderAdmin();
+}
+
+// --- View: Queue Management ---
+async function renderQueue() {
+    const container = document.createElement('div');
+    container.className = 'card';
+    container.innerHTML = `<h2>Live Waiting Queue</h2><div id="q-list">Loading...</div>`;
+    $('main').appendChild(container);
+
+    try {
+        const data = await apiCall("/triage/queue");
+        const list = data.queue;
+        
+        if (list.length === 0) {
+            $('q-list').innerHTML = `<p class="muted">No patients currently in queue.</p>`;
+            return;
+        }
+
+        $('q-list').innerHTML = list.map(q => {
+            const tierCls = q.category === 'RED' ? 'r' : q.category === 'YELLOW' ? 'y' : 'g';
+            const tierDot = q.category === 'RED' ? '1' : q.category === 'YELLOW' ? '2' : '3';
+            
+            let actions = `<button class="btn soft sm" onclick="routePatient(${q.id}, 'IN_TREATMENT')">Treat</button>`;
+            if (q.category !== 'RED') {
+                actions += `<button class="btn sm" onclick="dischargePatient(${q.id}, '${q.recommended_treatment}')">Discharge</button>`;
+            }
+
+            return `
+            <div class="row">
+                <div style="flex:1">
+                    <span class="dot t${tierDot}"></span> &nbsp;
+                    <b>${q.patient_name}</b> <span class="muted">ID: ${q.id}</span>
+                    <div style="margin-top:4px; font-size:13px">
+                        <b>Dept:</b> ${q.department} &middot; 
+                        <b>AI Rec:</b> ${q.recommended_treatment}
+                    </div>
+                </div>
+                <div style="text-align:right">
+                    <div style="margin-bottom:8px">
+                        <span class="chip st">Priority: ${q.priority_score.toFixed(0)}</span>
+                        <span class="chip ${tierCls}">${q.category}</span>
+                    </div>
+                    <div class="act-btns">${actions}</div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        $('q-list').innerHTML = `<p class="err">${e.message}</p>`;
+    }
+}
+
+window.dischargePatient = async (id, treatment) => {
+    try {
+        await apiCall("/triage/discharge", "PUT", { patient_id: id, approved_treatment: treatment });
+        toast(`Patient ${id} Discharged`);
+        renderQueue();
+    } catch(e) { toast(e.message, true); }
+};
+
+window.routePatient = async (id, status) => {
+    try {
+        await apiCall("/triage/route", "PUT", { patient_id: id, department: "INTERNAL", status: status });
+        toast(`Patient ${id} Routed`);
+        renderQueue();
+    } catch(e) { toast(e.message, true); }
+};
+
+// --- View: Triage Entry ---
+async function renderTriage() {
+    const html = `
+    <div class="card" style="max-width:600px">
+        <h2>Submit Clinical Report</h2>
+        
+        <div style="display:flex; gap:10px; margin-bottom: 18px;">
+            <button class="btn" id="btn-new" onclick="toggleTriage('new')">New Patient</button>
+            <button class="btn soft" id="btn-exist" onclick="toggleTriage('exist')">Existing Patient</button>
+        </div>
+        
+        <div id="form-new">
+            <p class="muted" style="margin-top:0; margin-bottom:12px;">Assigning ID: <span class="chip st" id="next-id-badge">Loading...</span></p>
+            <label>Patient Name</label>
+            <input class="f" id="tr-name" placeholder="John Doe">
+            <label>Allergies</label>
+            <input class="f" id="tr-allergies" placeholder="e.g. Penicillin, Peanuts (or 'None')">
+        </div>
+        
+        <div id="form-exist" hidden>
+            <label>Existing Patient ID</label>
+            <input class="f" id="tr-id" type="number" placeholder="e.g. 1">
+        </div>
+
+        <label>Current Vitals</label>
+        <input class="f" id="tr-vitals" placeholder="e.g. BP: 120/80, HR: 85, Temp: 98.6F">
+        
+        <label>Clinical Notes</label>
+        <textarea class="f" id="tr-notes" placeholder="Describe symptoms, e.g. severe chest pain..."></textarea>
+        
+        <button class="btn" style="margin-top:16px" onclick="submitTriage()">Run AI Triage</button>
+        <div id="tr-res" style="margin-top:16px"></div>
+    </div>`;
+    
+    $('main').insertAdjacentHTML('beforeend', html);
+    fetchNextId();
+}
+
+window.toggleTriage = (mode) => {
+    currentTriageMode = mode;
+    $('btn-new').className = mode === 'new' ? 'btn' : 'btn soft';$('btn-exist').className = mode === 'exist' ? 'btn' : 'btn soft';
+    $('form-new').hidden = mode !== 'new';$('form-exist').hidden = mode !== 'exist';
+};
+
+window.fetchNextId = async () => {
+    try {
+        const res = await apiCall("/triage/next-id");
+        if($('next-id-badge'))$('next-id-badge').textContent = res.next_id;
+    } catch (e) {
+        if($('next-id-badge'))$('next-id-badge').textContent = "Error";
+    }
+};
+
+window.submitTriage = async () => {
+    const vitals = $('tr-vitals').value;
+    const notes = $('tr-notes').value;
+    
+    let payload = { clinical_report: notes, vitals: vitals };
+    
+    if (currentTriageMode === 'new') {
+        const name = $('tr-name').value;
+        const allergies = $('tr-allergies').value;
+        if(!name || !notes || !vitals || !allergies) return toast("Fill all fields", true);
+        payload.patient_name = name;
+        payload.allergies = allergies;
+    } else {
+        const id = $('tr-id').value;
+        if(!id || !notes || !vitals) return toast("Fill all fields", true);
+        payload.patient_id = parseInt(id);
+    }
+    
+    try {
+        const res = await apiCall("/triage/analyze", "POST", payload);
+        const color = res.assigned_category === 'RED' ? 'r' : res.assigned_category === 'YELLOW' ? 'y' : 'g';
+        
+        $('tr-res').innerHTML = `
+            <div style="padding:14px; background:var(--sel); border-radius:10px;">
+                <b>Success! Patient ID ${res.patient_id} Queued.</b><br>
+                Assigned: <span class="chip ${color}">${res.assigned_category}</span><br>
+                Routing: ${res.assigned_department}<br>
+                Protocol: ${res.recommended_treatment}
+            </div>`;
+            
+        if(currentTriageMode === 'new') {
+            $('tr-name').value = '';$('tr-allergies').value = '';
+            fetchNextId(); 
+        } else {
+            $('tr-id').value = '';
+        }
+        $('tr-vitals').value = '';$('tr-notes').value = '';
+        
+    } catch (e) { toast(e.message, true); }
+};
+
+// --- View: Patient Lookup (Masked Data) ---
+function renderLookup() {
+    const html = `
+    <div class="card" style="max-width:500px">
+        <h2>Patient Database</h2>
+        <p class="muted" style="margin-bottom:12px">Access depends on your RBAC role permissions.</p>
+        <div style="display:flex; gap:10px">
+            <input class="f" id="lu-id" placeholder="Patient ID (e.g. 1)" type="number">
+            <button class="btn" onclick="fetchPatient()">Search</button>
+        </div>
+        <div id="lu-res" style="margin-top:20px"></div>
+    </div>`;
+    $('main').insertAdjacentHTML('beforeend', html);
+}
+
+window.fetchPatient = async () => {
+    const id = $('lu-id').value;
+    if(!id) return;
+    const resDiv = $('lu-res');
+    resDiv.innerHTML = "Searching...";
+    
+    try {
+        const endpoint = (user.role === 'DOCTOR' || user.role === 'ADMIN') ? 'history' : 'triage-summary';
+        const data = await apiCall(`/patient/${id}/${endpoint}`);
+        
+        if(data.full_history) {
+            resDiv.innerHTML = `
+                <div style="padding:14px; border:1px solid var(--line); border-radius:10px;">
+                    <b style="font-size:18px">${data.patient_name}</b> (ID: ${data.patient_id})
+                    <hr style="border:0; border-top:1px solid var(--line); margin:10px 0">
+                    <b>Comprehensive History:</b><br>${data.full_history}
+                </div>`;
+        } else {
+            resDiv.innerHTML = `
+                <div style="padding:14px; border:1px solid var(--line); border-radius:10px;">
+                    <b style="font-size:18px">${data.patient_name}</b> (ID: ${data.patient_id})
+                    <hr style="border:0; border-top:1px solid var(--line); margin:10px 0">
+                    <span class="chip y">Vitals</span> ${data.vitals}<br><br>
+                    <span class="chip r">Allergies</span> ${data.allergies}
+                </div>`;
+        }
+    } catch (e) { resDiv.innerHTML = `<p class="err">${e.message}</p>`; }
+};
+
+// --- View: Admin Account Management ---
+function renderAdmin() {
+    const html = `
+    <div class="card" style="max-width:500px">
+        <h2>Provision Staff Account</h2>
+        <label>Username</label>
+        <input class="f" id="ad-u" placeholder="New username">
+        
+        <label>Password</label>
+        <input class="f" id="ad-p" type="password" placeholder="Temporary password">
+        
+        <label>System Role</label>
+        <select class="f" id="ad-r">
+            <option value="DOCTOR">Doctor</option>
+            <option value="NURSE">Nurse</option>
+            <option value="ADMIN">Administrator</option>
+        </select>
+        
+        <button class="btn wide" style="margin-top:20px" onclick="registerUser()">Create Profile</button>
+    </div>`;
+    $('main').insertAdjacentHTML('beforeend', html);
+}
+
+window.registerUser = async () => {
+    const u = $('ad-u').value;
+    const p = $('ad-p').value;
+    const r = $('ad-r').value;
+    if(!u || !p) return toast("Fill all fields", true);
+    
+    try {
+        const res = await apiCall("/users/register", "POST", { username: u, password: p, role: r });
+        toast(res.message);
+        $('ad-u').value = '';$('ad-p').value = '';
+    } catch (e) { toast(e.message, true); }
+};
+</script>
+</body>
+</html>
